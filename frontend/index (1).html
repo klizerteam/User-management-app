@@ -3,1060 +3,979 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <title>User Management System</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         :root {
             --bg-primary: #0a0a0f;
             --bg-secondary: #12121a;
-            --bg-tertiary: #1a1a25;
-            --bg-elevated: #22222f;
-            --border-subtle: #2a2a3a;
-            --border-active: #3d3d55;
+            --bg-tertiary: #1a1a24;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-pink: #ec4899;
             --text-primary: #f0f0f5;
-            --text-secondary: #9090a0;
-            --text-muted: #606075;
-            --accent-primary: #6366f1;
-            --accent-hover: #818cf8;
-            --accent-glow: rgba(99, 102, 241, 0.15);
-            --success: #22c55e;
-            --success-bg: rgba(34, 197, 94, 0.1);
-            --warning: #f59e0b;
-            --warning-bg: rgba(245, 158, 11, 0.1);
-            --danger: #ef4444;
-            --danger-bg: rgba(239, 68, 68, 0.1);
-            --gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --text-secondary: #8888a0;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(18, 18, 26, 0.8);
         }
-
+        
         body {
-            font-family: 'Outfit', -apple-system, sans-serif;
+            font-family: 'Outfit', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
-            line-height: 1.6;
+            overflow-x: hidden;
         }
-
+        
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Animated gradient background */
+        .gradient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0, 212, 255, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(168, 85, 247, 0.12), transparent),
+                radial-gradient(ellipse 50% 30% at 50% 90%, rgba(236, 72, 153, 0.08), transparent);
+            animation: gradientShift 15s ease-in-out infinite alternate;
+        }
+        
+        @keyframes gradientShift {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.1) rotate(3deg); }
+        }
+        
+        /* Glass card effect */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(0, 212, 255, 0.1);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 40px rgba(168, 85, 247, 0.1);
+        }
+        
+        /* Input styling */
+        .input-field {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 18px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+            width: 100%;
+        }
+        
+        .input-field:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+        
+        .input-field::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        /* Button styling */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+            color: #0a0a0f;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        
+        /* Table styling */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .data-table th {
+            text-align: left;
+            padding: 16px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .data-table td {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        .data-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        /* Role badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-admin {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+            color: var(--accent-purple);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+        
+        .badge-user {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        /* Animation keyframes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.5s ease forwards;
+        }
+        
+        /* Stagger animations */
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+        
         /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
+        
         ::-webkit-scrollbar-track {
             background: var(--bg-secondary);
         }
+        
         ::-webkit-scrollbar-thumb {
-            background: var(--border-active);
+            background: var(--bg-tertiary);
             border-radius: 4px;
         }
+        
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
+            background: rgba(255, 255, 255, 0.15);
         }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: toastIn 0.3s ease forwards;
+        }
+        
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-
-        .animate-slide-in {
-            animation: slideIn 0.3s ease-out forwards;
-        }
-
-        /* Layout */
-        .app-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Header */
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--gradient-accent);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .logo-text {
-            font-weight: 600;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.25rem;
-            border-radius: 10px;
-            font-family: inherit;
-            font-weight: 500;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: none;
-            outline: none;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: var(--gradient-accent);
-            color: white;
-            box-shadow: 0 2px 10px var(--accent-glow);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px var(--accent-glow);
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-subtle);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: var(--bg-elevated);
-            border-color: var(--border-active);
-        }
-
-        .btn-danger {
-            background: var(--danger-bg);
-            color: var(--danger);
-            border: 1px solid transparent;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-secondary);
-            padding: 0.5rem;
-        }
-
-        .btn-ghost:hover:not(:disabled) {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-        }
-
-        .btn-sm {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            border-radius: 8px;
-        }
-
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .form-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239090a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            padding-right: 2.5rem;
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* Table */
-        .table-container {
-            overflow-x: auto;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th,
-        .table td {
-            padding: 1rem 1.25rem;
-            text-align: left;
-        }
-
-        .table th {
-            background: var(--bg-tertiary);
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-subtle);
-        }
-
-        .table td {
-            border-bottom: 1px solid var(--border-subtle);
-            font-size: 0.9rem;
-        }
-
-        .table tbody tr {
-            transition: background 0.15s ease;
-        }
-
-        .table tbody tr:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* Badges */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: capitalize;
-        }
-
-        .badge-admin {
-            background: var(--accent-glow);
-            color: var(--accent-hover);
-        }
-
-        .badge-user {
-            background: var(--bg-elevated);
-            color: var(--text-secondary);
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 2rem;
-            animation: fadeIn 0.2s ease-out;
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 480px;
-            max-height: 90vh;
-            overflow-y: auto;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-subtle);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border-subtle);
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-        }
-
-        /* Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .stat-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: 14px;
-            padding: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-
-        .stat-icon.users {
-            background: var(--accent-glow);
-            color: var(--accent-primary);
-        }
-
-        .stat-icon.admins {
-            background: rgba(139, 92, 246, 0.15);
-            color: #a78bfa;
-        }
-
-        .stat-icon.total {
-            background: var(--success-bg);
-            color: var(--success);
-        }
-
-        .stat-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            line-height: 1;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-        }
-
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 1100;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .toast {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 1.25rem;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease-out;
-            min-width: 280px;
-        }
-
-        .toast.success {
-            border-color: var(--success);
-        }
-
-        .toast.error {
-            border-color: var(--danger);
-        }
-
-        .toast-icon {
-            font-size: 1.25rem;
-        }
-
-        .toast.success .toast-icon {
-            color: var(--success);
-        }
-
-        .toast.error .toast-icon {
-            color: var(--danger);
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 0.9rem;
-        }
-
-        /* User Avatar */
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: var(--gradient-accent);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        /* Actions */
-        .actions-cell {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .empty-state-title {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-        }
-
-        /* Loading */
-        .loading-spinner {
+        
+        .toast-success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+        
+        .toast-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        
+        /* Loading spinner */
+        .spinner {
             width: 20px;
             height: 20px;
-            border: 2px solid var(--border-subtle);
-            border-top-color: var(--accent-primary);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-cyan);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
+        
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 1rem;
-            }
-
-            .header {
-                padding: 1rem;
-            }
-
-            .table th,
-            .table td {
-                padding: 0.75rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
+        
+        /* Grid pattern overlay */
+        .grid-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.03;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
+    
     <script type="text/babel">
         const { useState, useEffect, createContext, useContext } = React;
-
+        
         // API Configuration
-        const API_BASE = 'http://localhost:8000';
-
-        // Toast Context
-        const ToastContext = createContext(null);
-        const useToast = () => useContext(ToastContext);
-
-        // Icons
-        const Icons = {
-            Users: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-            ),
-            Shield: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                </svg>
-            ),
-            Check: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"/>
-                </svg>
-            ),
-            X: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            ),
-            Plus: () => (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="12" y1="5" x2="12" y2="19"/>
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-            ),
-            Edit: () => (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-            ),
-            Trash: () => (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-            ),
-            AlertCircle: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-            ),
-            CheckCircle: () => (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-            ),
-            Inbox: () => (
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
-                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-                </svg>
-            )
-        };
-
-        // Toast Provider
-        function ToastProvider({ children }) {
-            const [toasts, setToasts] = useState([]);
-
-            const addToast = (message, type = 'success') => {
-                const id = Date.now();
-                setToasts(prev => [...prev, { id, message, type }]);
-                setTimeout(() => {
-                    setToasts(prev => prev.filter(t => t.id !== id));
-                }, 4000);
-            };
-
+        const API_URL = 'http://localhost:8000';
+        
+        // Auth Context
+        const AuthContext = createContext(null);
+        
+        const useAuth = () => useContext(AuthContext);
+        
+        // Toast Component
+        const Toast = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+            
             return (
-                <ToastContext.Provider value={{ addToast }}>
-                    {children}
-                    <div className="toast-container">
-                        {toasts.map(toast => (
-                            <div key={toast.id} className={`toast ${toast.type}`}>
-                                <span className="toast-icon">
-                                    {toast.type === 'success' ? <Icons.CheckCircle /> : <Icons.AlertCircle />}
-                                </span>
-                                <span className="toast-message">{toast.message}</span>
-                            </div>
-                        ))}
-                    </div>
-                </ToastContext.Provider>
+                <div className={`toast toast-${type}`}>
+                    {message}
+                </div>
             );
-        }
-
-        // API Functions
-        const api = {
-            async getUsers() {
-                const res = await fetch(`${API_BASE}/users`);
-                if (!res.ok) throw new Error('Failed to fetch users');
-                return res.json();
-            },
-
-            async createUser(data) {
-                const res = await fetch(`${API_BASE}/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.detail || 'Failed to create user');
-                }
-                return res.json();
-            },
-
-            async updateUser(id, data) {
-                const res = await fetch(`${API_BASE}/users/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.detail || 'Failed to update user');
-                }
-                return res.json();
-            },
-
-            async deleteUser(id) {
-                const res = await fetch(`${API_BASE}/users/${id}`, {
-                    method: 'DELETE'
-                });
-                if (!res.ok) {
-                    const error = await res.json();
-                    throw new Error(error.detail || 'Failed to delete user');
-                }
-                return true;
-            }
         };
-
-        // User Modal (Create/Edit)
-        function UserModal({ user, onClose, onSave }) {
-            const [formData, setFormData] = useState({
-                name: user?.name || '',
-                email: user?.email || '',
-                role: user?.role || 'user'
-            });
+        
+        // Loading Spinner
+        const Spinner = () => <div className="spinner"></div>;
+        
+        // Logo Component
+        const Logo = () => (
+            <div className="flex items-center gap-3">
+                <div className="relative">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                        </svg>
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900"></div>
+                </div>
+                <div>
+                    <h1 className="text-lg font-bold tracking-tight">UserHub</h1>
+                    <p className="text-xs text-gray-500 font-mono">v2.0</p>
+                </div>
+            </div>
+        );
+        
+        // Input Component
+        const Input = ({ label, type = 'text', value, onChange, placeholder, icon }) => (
+            <div className="space-y-2">
+                {label && (
+                    <label className="block text-sm font-medium text-gray-400">
+                        {label}
+                    </label>
+                )}
+                <div className="relative">
+                    {icon && (
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                            {icon}
+                        </div>
+                    )}
+                    <input
+                        type={type}
+                        value={value}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        className="input-field"
+                        style={{ paddingLeft: icon ? '48px' : '18px' }}
+                    />
+                </div>
+            </div>
+        );
+        
+        // Select Component
+        const Select = ({ label, value, onChange, options }) => (
+            <div className="space-y-2">
+                {label && (
+                    <label className="block text-sm font-medium text-gray-400">
+                        {label}
+                    </label>
+                )}
+                <select
+                    value={value}
+                    onChange={onChange}
+                    className="input-field cursor-pointer"
+                    style={{ appearance: 'none' }}
+                >
+                    {options.map(opt => (
+                        <option key={opt.value} value={opt.value} style={{ background: '#1a1a24' }}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        );
+        
+        // Login Page
+        const LoginPage = ({ onSwitchToRegister }) => {
+            const { login, toast } = useAuth();
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
-            const { addToast } = useToast();
-
-            const isEditing = !!user;
-
+            
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setLoading(true);
-
+                
                 try {
-                    if (isEditing) {
-                        await api.updateUser(user.id, formData);
-                        addToast('User updated successfully', 'success');
-                    } else {
-                        await api.createUser(formData);
-                        addToast('User created successfully', 'success');
+                    const formData = new URLSearchParams();
+                    formData.append('username', email);
+                    formData.append('password', password);
+                    
+                    const response = await fetch(`${API_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Login failed');
                     }
-                    onSave();
+                    
+                    const data = await response.json();
+                    login(data.access_token);
+                    toast('Welcome back!', 'success');
                 } catch (err) {
-                    addToast(err.message, 'error');
+                    toast(err.message, 'error');
                 } finally {
                     setLoading(false);
                 }
             };
-
+            
             return (
-                <div className="modal-overlay" onClick={onClose}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">
-                                {isEditing ? 'Edit User' : 'Create User'}
-                            </h3>
-                            <button className="btn btn-ghost" onClick={onClose}>
-                                <Icons.X />
-                            </button>
+                <div className="min-h-screen flex items-center justify-center p-6">
+                    <div className="gradient-bg"></div>
+                    <div className="grid-pattern"></div>
+                    
+                    <div className="w-full max-w-md">
+                        <div className="glass-card p-8 animate-fadeIn">
+                            <div className="text-center mb-8">
+                                <div className="flex justify-center mb-6">
+                                    <Logo />
+                                </div>
+                                <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
+                                <p className="text-gray-500">Sign in to your account</p>
+                            </div>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <Input
+                                    label="Email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    icon={
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    }
+                                />
+                                
+                                <Input
+                                    label="Password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    icon={
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    }
+                                />
+                                
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn-primary w-full flex items-center justify-center gap-2"
+                                >
+                                    {loading ? <Spinner /> : 'Sign In'}
+                                </button>
+                            </form>
+                            
+                            <div className="mt-6 text-center">
+                                <span className="text-gray-500">Don't have an account? </span>
+                                <button
+                                    onClick={onSwitchToRegister}
+                                    className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                >
+                                    Register
+                                </button>
+                            </div>
                         </div>
-                        <form onSubmit={handleSubmit}>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="form-label">Full Name</label>
-                                    <input
-                                        type="text"
-                                        className="form-input"
-                                        placeholder="John Doe"
-                                        value={formData.name}
-                                        onChange={e => setFormData({...formData, name: e.target.value})}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Email</label>
-                                    <input
-                                        type="email"
-                                        className="form-input"
-                                        placeholder="john@example.com"
-                                        value={formData.email}
-                                        onChange={e => setFormData({...formData, email: e.target.value})}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group" style={{ marginBottom: 0 }}>
-                                    <label className="form-label">Role</label>
-                                    <select
-                                        className="form-input form-select"
-                                        value={formData.role}
-                                        onChange={e => setFormData({...formData, role: e.target.value})}
-                                    >
-                                        <option value="user">User</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={onClose}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn btn-primary" disabled={loading}>
-                                    {loading && <span className="loading-spinner" />}
-                                    {isEditing ? 'Save Changes' : 'Create User'}
-                                </button>
-                            </div>
-                        </form>
+                        
+                        <p className="text-center mt-6 text-xs text-gray-600 font-mono">
+                            Secured with JWT + Argon2
+                        </p>
                     </div>
                 </div>
             );
-        }
-
-        // Delete Confirmation Modal
-        function DeleteModal({ user, onClose, onConfirm }) {
+        };
+        
+        // Register Page
+        const RegisterPage = ({ onSwitchToLogin }) => {
+            const { toast } = useAuth();
+            const [name, setName] = useState('');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [role, setRole] = useState('user');
             const [loading, setLoading] = useState(false);
-            const { addToast } = useToast();
-
-            const handleDelete = async () => {
+            
+            const handleSubmit = async (e) => {
+                e.preventDefault();
                 setLoading(true);
+                
                 try {
-                    await api.deleteUser(user.id);
-                    addToast('User deleted successfully', 'success');
-                    onConfirm();
+                    const response = await fetch(`${API_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, password, role })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Registration failed');
+                    }
+                    
+                    toast('Account created! Please sign in.', 'success');
+                    onSwitchToLogin();
                 } catch (err) {
-                    addToast(err.message, 'error');
+                    toast(err.message, 'error');
                 } finally {
                     setLoading(false);
                 }
             };
-
+            
             return (
-                <div className="modal-overlay" onClick={onClose}>
-                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Delete User</h3>
-                            <button className="btn btn-ghost" onClick={onClose}>
-                                <Icons.X />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p style={{ color: 'var(--text-secondary)' }}>
-                                Are you sure you want to delete <strong style={{ color: 'var(--text-primary)' }}>{user.name}</strong>?
-                                This action cannot be undone.
-                            </p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={onClose}>
-                                Cancel
-                            </button>
-                            <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>
-                                {loading && <span className="loading-spinner" />}
-                                Delete User
-                            </button>
+                <div className="min-h-screen flex items-center justify-center p-6">
+                    <div className="gradient-bg"></div>
+                    <div className="grid-pattern"></div>
+                    
+                    <div className="w-full max-w-md">
+                        <div className="glass-card p-8 animate-fadeIn">
+                            <div className="text-center mb-8">
+                                <div className="flex justify-center mb-6">
+                                    <Logo />
+                                </div>
+                                <h2 className="text-2xl font-bold mb-2">Create account</h2>
+                                <p className="text-gray-500">Join our platform today</p>
+                            </div>
+                            
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                <Input
+                                    label="Full Name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="John Doe"
+                                    icon={
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    }
+                                />
+                                
+                                <Input
+                                    label="Email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    icon={
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    }
+                                />
+                                
+                                <Input
+                                    label="Password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Min. 8 characters"
+                                    icon={
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    }
+                                />
+                                
+                                <Select
+                                    label="Role"
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    options={[
+                                        { value: 'user', label: 'User' },
+                                        { value: 'admin', label: 'Admin' }
+                                    ]}
+                                />
+                                
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn-primary w-full flex items-center justify-center gap-2"
+                                >
+                                    {loading ? <Spinner /> : 'Create Account'}
+                                </button>
+                            </form>
+                            
+                            <div className="mt-6 text-center">
+                                <span className="text-gray-500">Already have an account? </span>
+                                <button
+                                    onClick={onSwitchToLogin}
+                                    className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                >
+                                    Sign in
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             );
-        }
-
-        // Main App
-        function App() {
-            const { addToast } = useToast();
-            const [users, setUsers] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [modalState, setModalState] = useState({ type: null, user: null });
-
-            const fetchUsers = async () => {
-                try {
-                    const data = await api.getUsers();
-                    setUsers(data);
-                } catch (err) {
-                    addToast(err.message, 'error');
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            useEffect(() => {
-                fetchUsers();
-            }, []);
-
-            const stats = {
-                total: users.length,
-                admins: users.filter(u => u.role === 'admin').length,
-                regularUsers: users.filter(u => u.role === 'user').length
-            };
-
+        };
+        
+        // Dashboard Header
+        const DashboardHeader = ({ currentUser }) => {
+            const { logout } = useAuth();
+            
+            return (
+                <header className="glass-card mb-8 p-5 flex items-center justify-between animate-slideIn">
+                    <Logo />
+                    
+                    <div className="flex items-center gap-6">
+                        <div className="text-right hidden sm:block">
+                            <p className="font-medium text-sm">{currentUser?.name || 'User'}</p>
+                            <p className="text-xs text-gray-500 font-mono">{currentUser?.email}</p>
+                        </div>
+                        
+                        <div className="h-8 w-px bg-gray-700"></div>
+                        
+                        <button
+                            onClick={logout}
+                            className="btn-secondary flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span className="hidden sm:inline">Logout</span>
+                        </button>
+                    </div>
+                </header>
+            );
+        };
+        
+        // Stats Card
+        const StatsCard = ({ title, value, icon, gradient }) => (
+            <div className={`glass-card p-6 relative overflow-hidden`}>
+                <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradient} opacity-10 rounded-full blur-2xl -translate-y-6 translate-x-6`}></div>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <p className="text-gray-500 text-sm mb-1">{title}</p>
+                        <p className="text-3xl font-bold">{value}</p>
+                    </div>
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} bg-opacity-20`}>
+                        {icon}
+                    </div>
+                </div>
+            </div>
+        );
+        
+        // User Row Component
+        const UserRow = ({ user, onDelete, isDeleting }) => {
             const formatDate = (dateString) => {
-                return new Date(dateString).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
                 });
             };
-
+            
             return (
-                <div className="app-container">
-                    <header className="header">
-                        <div className="logo">
-                            <div className="logo-icon">U</div>
-                            <span className="logo-text">User Management</span>
-                        </div>
-                    </header>
-
-                    <main className="main-content animate-fade-in">
-                        <div className="stats-grid">
-                            <div className="stat-card">
-                                <div className="stat-icon total">
-                                    <Icons.Check />
-                                </div>
-                                <div>
-                                    <div className="stat-value">{stats.total}</div>
-                                    <div className="stat-label">Total Users</div>
-                                </div>
+                <tr>
+                    <td>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-sm font-bold text-gray-900">
+                                {user.name.charAt(0).toUpperCase()}
                             </div>
-                            <div className="stat-card">
-                                <div className="stat-icon admins">
-                                    <Icons.Shield />
-                                </div>
-                                <div>
-                                    <div className="stat-value">{stats.admins}</div>
-                                    <div className="stat-label">Admins</div>
-                                </div>
-                            </div>
-                            <div className="stat-card">
-                                <div className="stat-icon users">
-                                    <Icons.Users />
-                                </div>
-                                <div>
-                                    <div className="stat-value">{stats.regularUsers}</div>
-                                    <div className="stat-label">Regular Users</div>
-                                </div>
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-xs text-gray-500 font-mono">{user.email}</p>
                             </div>
                         </div>
-
-                        <div className="card">
-                            <div className="card-header">
-                                <h2 className="card-title">Users</h2>
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => setModalState({ type: 'create', user: null })}
-                                >
-                                    <Icons.Plus />
-                                    Add User
-                                </button>
+                    </td>
+                    <td>
+                        <span className={`badge ${user.role === 'admin' ? 'badge-admin' : 'badge-user'}`}>
+                            {user.role}
+                        </span>
+                    </td>
+                    <td className="text-gray-400 font-mono text-sm">
+                        {formatDate(user.created_at)}
+                    </td>
+                    <td>
+                        <button
+                            onClick={() => onDelete(user.id)}
+                            disabled={isDeleting}
+                            className="btn-danger flex items-center gap-2"
+                        >
+                            {isDeleting ? (
+                                <Spinner />
+                            ) : (
+                                <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </>
+                            )}
+                        </button>
+                    </td>
+                </tr>
+            );
+        };
+        
+        // Dashboard Page
+        const DashboardPage = () => {
+            const { token, toast } = useAuth();
+            const [users, setUsers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [deletingId, setDeletingId] = useState(null);
+            const [currentUser, setCurrentUser] = useState(null);
+            
+            const fetchUsers = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/users`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to fetch users');
+                    
+                    const data = await response.json();
+                    setUsers(data);
+                    
+                    // Decode token to get current user email
+                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+                    const current = data.find(u => u.email === tokenPayload.sub);
+                    setCurrentUser(current);
+                } catch (err) {
+                    toast(err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            useEffect(() => {
+                fetchUsers();
+            }, [token]);
+            
+            const handleDelete = async (userId) => {
+                setDeletingId(userId);
+                
+                try {
+                    const response = await fetch(`${API_URL}/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to delete user');
+                    
+                    setUsers(users.filter(u => u.id !== userId));
+                    toast('User deleted successfully', 'success');
+                } catch (err) {
+                    toast(err.message, 'error');
+                } finally {
+                    setDeletingId(null);
+                }
+            };
+            
+            const adminCount = users.filter(u => u.role === 'admin').length;
+            const userCount = users.filter(u => u.role === 'user').length;
+            
+            return (
+                <div className="min-h-screen p-6 lg:p-10">
+                    <div className="gradient-bg"></div>
+                    <div className="grid-pattern"></div>
+                    
+                    <div className="max-w-7xl mx-auto">
+                        <DashboardHeader currentUser={currentUser} />
+                        
+                        {/* Stats */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                            <div className="animate-fadeIn stagger-1" style={{ opacity: 0 }}>
+                                <StatsCard
+                                    title="Total Users"
+                                    value={users.length}
+                                    gradient="from-cyan-400 to-blue-500"
+                                    icon={
+                                        <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    }
+                                />
                             </div>
-                            <div className="table-container">
-                                {loading ? (
-                                    <div style={{ padding: '2rem', textAlign: 'center' }}>
-                                        <span className="loading-spinner" style={{ margin: '0 auto', display: 'block', width: 32, height: 32 }} />
-                                    </div>
-                                ) : users.length === 0 ? (
-                                    <div className="empty-state">
-                                        <div className="empty-state-icon">
-                                            <Icons.Inbox />
-                                        </div>
-                                        <div className="empty-state-title">No users found</div>
-                                        <p>Get started by creating a new user.</p>
-                                    </div>
-                                ) : (
-                                    <table className="table">
+                            <div className="animate-fadeIn stagger-2" style={{ opacity: 0 }}>
+                                <StatsCard
+                                    title="Admins"
+                                    value={adminCount}
+                                    gradient="from-purple-400 to-pink-500"
+                                    icon={
+                                        <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                    }
+                                />
+                            </div>
+                            <div className="animate-fadeIn stagger-3" style={{ opacity: 0 }}>
+                                <StatsCard
+                                    title="Regular Users"
+                                    value={userCount}
+                                    gradient="from-green-400 to-teal-500"
+                                    icon={
+                                        <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    }
+                                />
+                            </div>
+                        </div>
+                        
+                        {/* Users Table */}
+                        <div className="glass-card animate-fadeIn stagger-4" style={{ opacity: 0 }}>
+                            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold">User Management</h2>
+                                    <p className="text-sm text-gray-500 mt-1">Manage your organization's users</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 font-mono">
+                                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                                    Live
+                                </div>
+                            </div>
+                            
+                            {loading ? (
+                                <div className="p-20 flex items-center justify-center">
+                                    <Spinner />
+                                </div>
+                            ) : users.length === 0 ? (
+                                <div className="p-20 text-center">
+                                    <svg className="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <p className="text-gray-500">No users found</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="data-table">
                                         <thead>
                                             <tr>
                                                 <th>User</th>
-                                                <th>Email</th>
                                                 <th>Role</th>
                                                 <th>Created</th>
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {users.map(u => (
-                                                <tr key={u.id}>
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                            <div className="user-avatar">
-                                                                {u.name.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span style={{ fontWeight: 500 }}>{u.name}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
-                                                    <td>
-                                                        <span className={`badge badge-${u.role}`}>
-                                                            {u.role}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ color: 'var(--text-secondary)' }}>
-                                                        {formatDate(u.created_at)}
-                                                    </td>
-                                                    <td>
-                                                        <div className="actions-cell">
-                                                            <button
-                                                                className="btn btn-ghost btn-sm"
-                                                                onClick={() => setModalState({ type: 'edit', user: u })}
-                                                                title="Edit"
-                                                            >
-                                                                <Icons.Edit />
-                                                            </button>
-                                                            <button
-                                                                className="btn btn-ghost btn-sm"
-                                                                onClick={() => setModalState({ type: 'delete', user: u })}
-                                                                title="Delete"
-                                                                style={{ color: 'var(--danger)' }}
-                                                            >
-                                                                <Icons.Trash />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
+                                            {users.map(user => (
+                                                <UserRow
+                                                    key={user.id}
+                                                    user={user}
+                                                    onDelete={handleDelete}
+                                                    isDeleting={deletingId === user.id}
+                                                />
                                             ))}
                                         </tbody>
                                     </table>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
-                    </main>
-
-                    {/* Modals */}
-                    {(modalState.type === 'create' || modalState.type === 'edit') && (
-                        <UserModal
-                            user={modalState.user}
-                            onClose={() => setModalState({ type: null, user: null })}
-                            onSave={() => {
-                                setModalState({ type: null, user: null });
-                                fetchUsers();
-                            }}
-                        />
-                    )}
-
-                    {modalState.type === 'delete' && modalState.user && (
-                        <DeleteModal
-                            user={modalState.user}
-                            onClose={() => setModalState({ type: null, user: null })}
-                            onConfirm={() => {
-                                setModalState({ type: null, user: null });
-                                fetchUsers();
-                            }}
-                        />
-                    )}
+                        
+                        {/* Footer */}
+                        <footer className="mt-8 text-center text-xs text-gray-600 font-mono">
+                            <p>Built with FastAPI + React • JWT Authentication • Argon2 Password Hashing</p>
+                        </footer>
+                    </div>
                 </div>
             );
-        }
-
-        // Root render
-        function Root() {
+        };
+        
+        // Auth Provider
+        const AuthProvider = ({ children }) => {
+            const [token, setToken] = useState(localStorage.getItem('token'));
+            const [toastData, setToastData] = useState(null);
+            
+            const login = (newToken) => {
+                localStorage.setItem('token', newToken);
+                setToken(newToken);
+            };
+            
+            const logout = () => {
+                localStorage.removeItem('token');
+                setToken(null);
+            };
+            
+            const toast = (message, type) => {
+                setToastData({ message, type, key: Date.now() });
+            };
+            
             return (
-                <ToastProvider>
-                    <App />
-                </ToastProvider>
+                <AuthContext.Provider value={{ token, login, logout, toast }}>
+                    {children}
+                    {toastData && (
+                        <Toast
+                            key={toastData.key}
+                            message={toastData.message}
+                            type={toastData.type}
+                            onClose={() => setToastData(null)}
+                        />
+                    )}
+                </AuthContext.Provider>
             );
-        }
-
-        ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+        };
+        
+        // Main App
+        const App = () => {
+            const [view, setView] = useState('login');
+            
+            return (
+                <AuthProvider>
+                    <AppContent view={view} setView={setView} />
+                </AuthProvider>
+            );
+        };
+        
+        const AppContent = ({ view, setView }) => {
+            const { token } = useAuth();
+            
+            if (token) {
+                return <DashboardPage />;
+            }
+            
+            if (view === 'register') {
+                return <RegisterPage onSwitchToLogin={() => setView('login')} />;
+            }
+            
+            return <LoginPage onSwitchToRegister={() => setView('register')} />;
+        };
+        
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
