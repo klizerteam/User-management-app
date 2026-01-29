@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-elevated: #22222f;
+            --border-subtle: #2a2a3a;
+            --border-active: #3d3d55;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9090a0;
+            --text-muted: #606075;
+            --accent-primary: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --gradient-accent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-active);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        /* Layout */
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-accent);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--gradient-accent);
+            color: white;
+            box-shadow: 0 2px 10px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--bg-elevated);
+            border-color: var(--border-active);
+        }
+
+        .btn-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid transparent;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+        }
+
+        .btn-ghost:hover:not(:disabled) {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239090a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem 1.25rem;
+            text-align: left;
+        }
+
+        .table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .table td {
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.9rem;
+        }
+
+        .table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .table tbody tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .badge-admin {
+            background: var(--accent-glow);
+            color: var(--accent-hover);
+        }
+
+        .badge-user {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.users {
+            background: var(--accent-glow);
+            color: var(--accent-primary);
+        }
+
+        .stat-icon.admins {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .stat-icon.total {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1100;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+            min-width: 280px;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--danger);
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast.success .toast-icon {
+            color: var(--success);
+        }
+
+        .toast.error .toast-icon {
+            color: var(--danger);
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        /* User Avatar */
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* Actions */
+        .actions-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Loading */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-subtle);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.75rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext } = React;
+
+        // API Configuration
+        const API_BASE = 'http://localhost:8000';
+
+        // Toast Context
+        const ToastContext = createContext(null);
+        const useToast = () => useContext(ToastContext);
+
+        // Icons
+        const Icons = {
+            Users: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+            ),
+            Shield: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            ),
+            Check: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            ),
+            X: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            ),
+            Plus: () => (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+            ),
+            Edit: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            ),
+            Trash: () => (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+            ),
+            AlertCircle: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            ),
+            CheckCircle: () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            ),
+            Inbox: () => (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+                    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+                </svg>
+            )
+        };
+
+        // Toast Provider
+        function ToastProvider({ children }) {
+            const [toasts, setToasts] = useState([]);
+
+            const addToast = (message, type = 'success') => {
+                const id = Date.now();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== id));
+                }, 4000);
+            };
+
+            return (
+                <ToastContext.Provider value={{ addToast }}>
+                    {children}
+                    <div className="toast-container">
+                        {toasts.map(toast => (
+                            <div key={toast.id} className={`toast ${toast.type}`}>
+                                <span className="toast-icon">
+                                    {toast.type === 'success' ? <Icons.CheckCircle /> : <Icons.AlertCircle />}
+                                </span>
+                                <span className="toast-message">{toast.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                </ToastContext.Provider>
+            );
+        }
+
+        // API Functions
+        const api = {
+            async getUsers() {
+                const res = await fetch(`${API_BASE}/users`);
+                if (!res.ok) throw new Error('Failed to fetch users');
+                return res.json();
+            },
+
+            async createUser(data) {
+                const res = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to create user');
+                }
+                return res.json();
+            },
+
+            async updateUser(id, data) {
+                const res = await fetch(`${API_BASE}/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to update user');
+                }
+                return res.json();
+            },
+
+            async deleteUser(id) {
+                const res = await fetch(`${API_BASE}/users/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to delete user');
+                }
+                return true;
+            }
+        };
+
+        // User Modal (Create/Edit)
+        function UserModal({ user, onClose, onSave }) {
+            const [formData, setFormData] = useState({
+                name: user?.name || '',
+                email: user?.email || '',
+                role: user?.role || 'user'
+            });
+            const [loading, setLoading] = useState(false);
+            const { addToast } = useToast();
+
+            const isEditing = !!user;
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+
+                try {
+                    if (isEditing) {
+                        await api.updateUser(user.id, formData);
+                        addToast('User updated successfully', 'success');
+                    } else {
+                        await api.createUser(formData);
+                        addToast('User created successfully', 'success');
+                    }
+                    onSave();
+                } catch (err) {
+                    addToast(err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">
+                                {isEditing ? 'Edit User' : 'Create User'}
+                            </h3>
+                            <button className="btn btn-ghost" onClick={onClose}>
+                                <Icons.X />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="form-label">Full Name</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        placeholder="John Doe"
+                                        value={formData.name}
+                                        onChange={e => setFormData({...formData, name: e.target.value})}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        className="form-input"
+                                        placeholder="john@example.com"
+                                        value={formData.email}
+                                        onChange={e => setFormData({...formData, email: e.target.value})}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                    <label className="form-label">Role</label>
+                                    <select
+                                        className="form-input form-select"
+                                        value={formData.role}
+                                        onChange={e => setFormData({...formData, role: e.target.value})}
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={onClose}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading && <span className="loading-spinner" />}
+                                    {isEditing ? 'Save Changes' : 'Create User'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // Delete Confirmation Modal
+        function DeleteModal({ user, onClose, onConfirm }) {
+            const [loading, setLoading] = useState(false);
+            const { addToast } = useToast();
+
+            const handleDelete = async () => {
+                setLoading(true);
+                try {
+                    await api.deleteUser(user.id);
+                    addToast('User deleted successfully', 'success');
+                    onConfirm();
+                } catch (err) {
+                    addToast(err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Delete User</h3>
+                            <button className="btn btn-ghost" onClick={onClose}>
+                                <Icons.X />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ color: 'var(--text-secondary)' }}>
+                                Are you sure you want to delete <strong style={{ color: 'var(--text-primary)' }}>{user.name}</strong>?
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={onClose}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-danger" onClick={handleDelete} disabled={loading}>
+                                {loading && <span className="loading-spinner" />}
+                                Delete User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App
+        function App() {
+            const { addToast } = useToast();
+            const [users, setUsers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [modalState, setModalState] = useState({ type: null, user: null });
+
+            const fetchUsers = async () => {
+                try {
+                    const data = await api.getUsers();
+                    setUsers(data);
+                } catch (err) {
+                    addToast(err.message, 'error');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchUsers();
+            }, []);
+
+            const stats = {
+                total: users.length,
+                admins: users.filter(u => u.role === 'admin').length,
+                regularUsers: users.filter(u => u.role === 'user').length
+            };
+
+            const formatDate = (dateString) => {
+                return new Date(dateString).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            };
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <div className="logo">
+                            <div className="logo-icon">U</div>
+                            <span className="logo-text">User Management</span>
+                        </div>
+                    </header>
+
+                    <main className="main-content animate-fade-in">
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-icon total">
+                                    <Icons.Check />
+                                </div>
+                                <div>
+                                    <div className="stat-value">{stats.total}</div>
+                                    <div className="stat-label">Total Users</div>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon admins">
+                                    <Icons.Shield />
+                                </div>
+                                <div>
+                                    <div className="stat-value">{stats.admins}</div>
+                                    <div className="stat-label">Admins</div>
+                                </div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-icon users">
+                                    <Icons.Users />
+                                </div>
+                                <div>
+                                    <div className="stat-value">{stats.regularUsers}</div>
+                                    <div className="stat-label">Regular Users</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card">
+                            <div className="card-header">
+                                <h2 className="card-title">Users</h2>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => setModalState({ type: 'create', user: null })}
+                                >
+                                    <Icons.Plus />
+                                    Add User
+                                </button>
+                            </div>
+                            <div className="table-container">
+                                {loading ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center' }}>
+                                        <span className="loading-spinner" style={{ margin: '0 auto', display: 'block', width: 32, height: 32 }} />
+                                    </div>
+                                ) : users.length === 0 ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">
+                                            <Icons.Inbox />
+                                        </div>
+                                        <div className="empty-state-title">No users found</div>
+                                        <p>Get started by creating a new user.</p>
+                                    </div>
+                                ) : (
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>User</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Created</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {users.map(u => (
+                                                <tr key={u.id}>
+                                                    <td>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                            <div className="user-avatar">
+                                                                {u.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span style={{ fontWeight: 500 }}>{u.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
+                                                    <td>
+                                                        <span className={`badge badge-${u.role}`}>
+                                                            {u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ color: 'var(--text-secondary)' }}>
+                                                        {formatDate(u.created_at)}
+                                                    </td>
+                                                    <td>
+                                                        <div className="actions-cell">
+                                                            <button
+                                                                className="btn btn-ghost btn-sm"
+                                                                onClick={() => setModalState({ type: 'edit', user: u })}
+                                                                title="Edit"
+                                                            >
+                                                                <Icons.Edit />
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-ghost btn-sm"
+                                                                onClick={() => setModalState({ type: 'delete', user: u })}
+                                                                title="Delete"
+                                                                style={{ color: 'var(--danger)' }}
+                                                            >
+                                                                <Icons.Trash />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Modals */}
+                    {(modalState.type === 'create' || modalState.type === 'edit') && (
+                        <UserModal
+                            user={modalState.user}
+                            onClose={() => setModalState({ type: null, user: null })}
+                            onSave={() => {
+                                setModalState({ type: null, user: null });
+                                fetchUsers();
+                            }}
+                        />
+                    )}
+
+                    {modalState.type === 'delete' && modalState.user && (
+                        <DeleteModal
+                            user={modalState.user}
+                            onClose={() => setModalState({ type: null, user: null })}
+                            onConfirm={() => {
+                                setModalState({ type: null, user: null });
+                                fetchUsers();
+                            }}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        // Root render
+        function Root() {
+            return (
+                <ToastProvider>
+                    <App />
+                </ToastProvider>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+    </script>
+</body>
+</html>

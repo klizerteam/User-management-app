@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic[email]
+sqlalchemy 
+psycopg2-binary
+fastapi==0.109.0
+uvicorn==0.27.0
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+pydantic[email]==2.5.3
+bcrypt==4.1.2
+PyJWT==2.8.0
