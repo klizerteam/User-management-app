@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr, Field
@@ -17,7 +17,7 @@ from jose import jwt, JWTError
 
 DATABASE_URL = "postgresql://postgres:Nourin123@localhost:5432/user_management"
 
-SECRET_KEY = "CHANGE_THIS_SECRET_KEY"
+SECRET_KEY = "9f2c1a9b7d2e4a1c8b3f9e6d1a5c4e7b"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -82,6 +82,11 @@ class UserCreate(BaseModel):
     email: EmailStr
     role: Literal["admin", "user"]
     password: str = Field(min_length=8, max_length=64)
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    role: Literal["admin", "user"] | None = None
+    password: str | None = Field(default=None, min_length=8, max_length=64)
 
 class UserResponse(BaseModel):
     id: int
@@ -163,7 +168,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
     return new_user
 
 @app.post("/auth/login", response_model=Token)
@@ -202,6 +206,30 @@ def get_user(
     user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(
+    user_id: int,
+    user_data: UserUpdate,
+    current_user: UserDB = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_data.name is not None:
+        user.name = user_data.name
+
+    if user_data.role is not None:
+        user.role = user_data.role
+
+    if user_data.password is not None:
+        user.password_hash = hash_password(user_data.password)
+
+    db.commit()
+    db.refresh(user)
     return user
 
 @app.delete("/users/{user_id}", status_code=204)
