@@ -130,6 +130,11 @@
             padding-left: 48px;
         }
         
+        .input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         /* Select styles */
         select.input {
             appearance: none;
@@ -162,18 +167,24 @@
             outline: none;
         }
         
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
         .btn-primary {
             background: var(--accent-primary);
             color: var(--bg-void);
         }
         
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: var(--accent-secondary);
             transform: translateY(-1px);
             box-shadow: 0 8px 24px -8px var(--accent-glow);
         }
         
-        .btn-primary:active {
+        .btn-primary:active:not(:disabled) {
             transform: translateY(0);
         }
         
@@ -183,7 +194,7 @@
             border: 1px solid var(--border-default);
         }
         
-        .btn-ghost:hover {
+        .btn-ghost:hover:not(:disabled) {
             background: var(--bg-hover);
             color: var(--text-primary);
             border-color: var(--border-default);
@@ -200,7 +211,7 @@
             border: 1px solid rgba(96, 165, 250, 0.2);
         }
         
-        .btn-edit:hover {
+        .btn-edit:hover:not(:disabled) {
             background: rgba(96, 165, 250, 0.2);
         }
         
@@ -210,7 +221,7 @@
             border: 1px solid rgba(251, 113, 133, 0.2);
         }
         
-        .btn-delete:hover {
+        .btn-delete:hover:not(:disabled) {
             background: rgba(251, 113, 133, 0.2);
         }
         
@@ -460,18 +471,245 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        
+        /* Password strength indicator */
+        .password-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .password-hint.valid {
+            color: var(--accent-primary);
+        }
+        
+        .password-hint.invalid {
+            color: var(--accent-rose);
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState, useEffect, createContext, useContext, useCallback } = React;
+        const { useState, useEffect, createContext, useContext, useCallback, useRef } = React;
         
         // =====================
         // CONFIG
         // =====================
         const API_URL = 'http://localhost:8000';
+        
+        // =====================
+        // UTILITY FUNCTIONS
+        // =====================
+        
+        // Decode JWT token
+        const decodeToken = (token) => {
+            try {
+                const payload = token.split('.')[1];
+                return JSON.parse(atob(payload));
+            } catch {
+                return null;
+            }
+        };
+        
+        // Check if token is expired
+        const isTokenExpired = (token) => {
+            const decoded = decodeToken(token);
+            if (!decoded || !decoded.exp) return true;
+            // Add 5 second buffer
+            return decoded.exp * 1000 < Date.now() + 5000;
+        };
+        
+        // Get user email from token
+        const getEmailFromToken = (token) => {
+            const decoded = decodeToken(token);
+            return decoded?.sub || null;
+        };
+        
+        // =====================
+        // API SERVICE (Centralized fetch logic)
+        // =====================
+        const createApiService = (token, onUnauthorized) => {
+            
+            // Handle API errors with specific messages
+            const handleError = async (response) => {
+                let errorMessage = 'An error occurred';
+                
+                try {
+                    const errorData = await response.json();
+                    
+                    switch (response.status) {
+                        case 401:
+                            errorMessage = errorData.detail || 'Invalid credentials';
+                            onUnauthorized();
+                            break;
+                        case 409:
+                            errorMessage = errorData.detail || 'Email already exists';
+                            break;
+                        case 422:
+                            // Handle validation errors
+                            if (errorData.detail && Array.isArray(errorData.detail)) {
+                                errorMessage = errorData.detail.map(e => e.msg).join(', ');
+                            } else {
+                                errorMessage = errorData.detail || 'Validation error';
+                            }
+                            break;
+                        case 404:
+                            errorMessage = errorData.detail || 'Resource not found';
+                            break;
+                        default:
+                            errorMessage = errorData.detail || `Error: ${response.status}`;
+                    }
+                } catch {
+                    errorMessage = `Error: ${response.status} ${response.statusText}`;
+                }
+                
+                throw new Error(errorMessage);
+            };
+            
+            // Get auth headers
+            const getAuthHeaders = () => ({
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            });
+            
+            return {
+                // Login - uses form-urlencoded, NOT JSON
+                login: async (email, password) => {
+                    const formData = new URLSearchParams();
+                    formData.append('username', email);  // Backend expects 'username', not 'email'
+                    formData.append('password', password);
+                    
+                    const response = await fetch(`${API_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    return response.json();
+                },
+                
+                // Register - uses JSON
+                register: async (userData) => {
+                    const response = await fetch(`${API_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    return response.json();
+                },
+                
+                // Get all users - requires auth
+                getUsers: async () => {
+                    if (!token) throw new Error('No authentication token');
+                    if (isTokenExpired(token)) {
+                        onUnauthorized();
+                        throw new Error('Session expired');
+                    }
+                    
+                    const response = await fetch(`${API_URL}/users`, {
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    return response.json();
+                },
+                
+                // Get single user - requires auth
+                getUser: async (userId) => {
+                    if (!token) throw new Error('No authentication token');
+                    if (isTokenExpired(token)) {
+                        onUnauthorized();
+                        throw new Error('Session expired');
+                    }
+                    
+                    const response = await fetch(`${API_URL}/users/${userId}`, {
+                        headers: getAuthHeaders()
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    return response.json();
+                },
+                
+                // Update user - requires auth, only sends changed fields
+                updateUser: async (userId, updateData) => {
+                    if (!token) throw new Error('No authentication token');
+                    if (isTokenExpired(token)) {
+                        onUnauthorized();
+                        throw new Error('Session expired');
+                    }
+                    
+                    // Only include non-empty fields
+                    const cleanData = {};
+                    if (updateData.name !== undefined && updateData.name !== '') {
+                        cleanData.name = updateData.name;
+                    }
+                    if (updateData.role !== undefined && updateData.role !== '') {
+                        cleanData.role = updateData.role;
+                    }
+                    // Only send password if it's at least 8 characters
+                    if (updateData.password && updateData.password.length >= 8) {
+                        cleanData.password = updateData.password;
+                    }
+                    
+                    const response = await fetch(`${API_URL}/users/${userId}`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify(cleanData)
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    return response.json();
+                },
+                
+                // Delete user - requires auth, expects 204 No Content
+                deleteUser: async (userId) => {
+                    if (!token) throw new Error('No authentication token');
+                    if (isTokenExpired(token)) {
+                        onUnauthorized();
+                        throw new Error('Session expired');
+                    }
+                    
+                    const response = await fetch(`${API_URL}/users/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                        // No body for DELETE
+                    });
+                    
+                    if (!response.ok) {
+                        await handleError(response);
+                    }
+                    
+                    // 204 No Content - no JSON to parse
+                    return true;
+                }
+            };
+        };
         
         // =====================
         // CONTEXT
@@ -604,7 +842,7 @@
         );
         
         // Input Field
-        const InputField = ({ label, icon, ...props }) => (
+        const InputField = ({ label, icon, hint, ...props }) => (
             <div style={{ marginBottom: '16px' }}>
                 {label && (
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary)' }}>
@@ -619,6 +857,7 @@
                     )}
                     <input className={`input ${icon ? 'input-with-icon' : ''}`} {...props} />
                 </div>
+                {hint && <p className={`password-hint ${hint.valid ? 'valid' : 'invalid'}`}>{hint.text}</p>}
             </div>
         );
         
@@ -639,38 +878,34 @@
         );
         
         // Edit Modal
-        const EditModal = ({ user, onClose, onSave }) => {
+        const EditModal = ({ user, onClose, onSave, api }) => {
             const [name, setName] = useState(user.name);
             const [role, setRole] = useState(user.role);
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
-            const { token, toast } = useAuth();
+            const { toast } = useAuth();
+            
+            const passwordValid = password === '' || password.length >= 8;
             
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                
+                if (password !== '' && password.length < 8) {
+                    toast('Password must be at least 8 characters', 'error');
+                    return;
+                }
+                
                 setLoading(true);
                 
                 try {
+                    // Only send fields that are being updated
+                    // API service handles not sending empty password
                     const updateData = { name, role };
                     if (password.length >= 8) {
                         updateData.password = password;
                     }
                     
-                    const response = await fetch(`${API_URL}/users/${user.id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(updateData)
-                    });
-                    
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.detail || 'Update failed');
-                    }
-                    
-                    const updatedUser = await response.json();
+                    const updatedUser = await api.updateUser(user.id, updateData);
                     onSave(updatedUser);
                     toast('User updated successfully', 'success');
                     onClose();
@@ -689,7 +924,7 @@
                                 <h2 style={{ fontSize: '18px', fontWeight: '600' }}>Edit User</h2>
                                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>{user.email}</p>
                             </div>
-                            <button className="btn btn-icon btn-ghost" onClick={onClose}>
+                            <button className="btn btn-icon btn-ghost" onClick={onClose} disabled={loading}>
                                 <Icons.X />
                             </button>
                         </div>
@@ -701,6 +936,8 @@
                                 onChange={e => setName(e.target.value)}
                                 placeholder="Enter name"
                                 icon={<Icons.User />}
+                                disabled={loading}
+                                required
                             />
                             
                             <SelectField
@@ -711,6 +948,7 @@
                                     { value: 'user', label: 'User' },
                                     { value: 'admin', label: 'Admin' }
                                 ]}
+                                disabled={loading}
                             />
                             
                             <InputField
@@ -720,13 +958,18 @@
                                 onChange={e => setPassword(e.target.value)}
                                 placeholder="Leave empty to keep current"
                                 icon={<Icons.Lock />}
+                                disabled={loading}
+                                hint={password.length > 0 ? {
+                                    text: password.length >= 8 ? '✓ Password meets requirements' : `${8 - password.length} more characters needed`,
+                                    valid: password.length >= 8
+                                } : null}
                             />
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                                <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>
+                                <button type="button" className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading}>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={loading || !passwordValid}>
                                     {loading ? <Spinner /> : 'Save Changes'}
                                 </button>
                             </div>
@@ -759,7 +1002,7 @@
                             Are you sure you want to delete <strong>{user.name}</strong>? This action cannot be undone.
                         </p>
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>
+                            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose} disabled={loading}>
                                 Cancel
                             </button>
                             <button className="btn btn-delete" style={{ flex: 1 }} onClick={onConfirm} disabled={loading}>
@@ -854,27 +1097,18 @@
             const [password, setPassword] = useState('');
             const [loading, setLoading] = useState(false);
             
+            // Create API service without token for login
+            const api = createApiService(null, () => {});
+            
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 
                 try {
-                    const formData = new URLSearchParams();
-                    formData.append('username', email);
-                    formData.append('password', password);
+                    // Login uses form-urlencoded with 'username' field (not 'email')
+                    const data = await api.login(email, password);
                     
-                    const response = await fetch(`${API_URL}/auth/login`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.detail || 'Login failed');
-                    }
-                    
-                    const data = await response.json();
+                    // Store token in localStorage
                     login(data.access_token);
                     toast('Welcome back!', 'success');
                 } catch (err) {
@@ -908,6 +1142,7 @@
                                     placeholder="you@example.com"
                                     icon={<Icons.Mail />}
                                     required
+                                    disabled={loading}
                                 />
                                 
                                 <InputField
@@ -918,16 +1153,26 @@
                                     placeholder="••••••••"
                                     icon={<Icons.Lock />}
                                     required
+                                    disabled={loading}
                                 />
                                 
-                                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-primary" 
+                                    style={{ width: '100%', marginTop: '8px' }} 
+                                    disabled={loading || !email || !password}
+                                >
                                     {loading ? <Spinner /> : 'Sign In'}
                                 </button>
                             </form>
                             
                             <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                                 Don't have an account?{' '}
-                                <button onClick={onSwitch} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: '500', cursor: 'pointer' }}>
+                                <button 
+                                    onClick={onSwitch} 
+                                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: '500', cursor: 'pointer' }}
+                                    disabled={loading}
+                                >
                                     Register
                                 </button>
                             </p>
@@ -950,22 +1195,25 @@
             const [role, setRole] = useState('user');
             const [loading, setLoading] = useState(false);
             
+            // Create API service without token for registration
+            const api = createApiService(null, () => {});
+            
+            const passwordValid = password.length >= 8;
+            const formValid = name && email && passwordValid;
+            
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                
+                if (!passwordValid) {
+                    toast('Password must be at least 8 characters', 'error');
+                    return;
+                }
+                
                 setLoading(true);
                 
                 try {
-                    const response = await fetch(`${API_URL}/auth/register`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password, role })
-                    });
-                    
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.detail || 'Registration failed');
-                    }
-                    
+                    // Register payload: name, email, role, password
+                    await api.register({ name, email, role, password });
                     toast('Account created! Please sign in.', 'success');
                     onSwitch();
                 } catch (err) {
@@ -998,6 +1246,7 @@
                                     placeholder="John Doe"
                                     icon={<Icons.User />}
                                     required
+                                    disabled={loading}
                                 />
                                 
                                 <InputField
@@ -1008,6 +1257,7 @@
                                     placeholder="you@example.com"
                                     icon={<Icons.Mail />}
                                     required
+                                    disabled={loading}
                                 />
                                 
                                 <InputField
@@ -1019,6 +1269,11 @@
                                     icon={<Icons.Lock />}
                                     minLength={8}
                                     required
+                                    disabled={loading}
+                                    hint={password.length > 0 ? {
+                                        text: password.length >= 8 ? '✓ Password meets requirements' : `${8 - password.length} more characters needed`,
+                                        valid: password.length >= 8
+                                    } : null}
                                 />
                                 
                                 <SelectField
@@ -1029,16 +1284,26 @@
                                         { value: 'user', label: 'User' },
                                         { value: 'admin', label: 'Admin' }
                                     ]}
+                                    disabled={loading}
                                 />
                                 
-                                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>
+                                <button 
+                                    type="submit" 
+                                    className="btn btn-primary" 
+                                    style={{ width: '100%', marginTop: '8px' }} 
+                                    disabled={loading || !formValid}
+                                >
                                     {loading ? <Spinner /> : 'Create Account'}
                                 </button>
                             </form>
                             
                             <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: 'var(--text-secondary)' }}>
                                 Already have an account?{' '}
-                                <button onClick={onSwitch} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: '500', cursor: 'pointer' }}>
+                                <button 
+                                    onClick={onSwitch} 
+                                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: '500', cursor: 'pointer' }}
+                                    disabled={loading}
+                                >
                                     Sign in
                                 </button>
                             </p>
@@ -1048,53 +1313,60 @@
             );
         };
         
-        // Dashboard Page
+        // Dashboard Page (only shown when logged in)
         const DashboardPage = () => {
             const { token, logout, toast } = useAuth();
             const [users, setUsers] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [currentUser, setCurrentUser] = useState(null);
             const [editingUser, setEditingUser] = useState(null);
             const [deletingUser, setDeletingUser] = useState(null);
             const [deleteLoading, setDeleteLoading] = useState(false);
             
+            // Get logged-in user email from JWT
+            const loggedInEmail = getEmailFromToken(token);
+            const currentUser = users.find(u => u.email === loggedInEmail);
+            
+            // Create API service with token and auto-logout on 401
+            const api = createApiService(token, logout);
+            
+            // Fetch users on mount
             const fetchUsers = useCallback(async () => {
                 try {
-                    const response = await fetch(`${API_URL}/users`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    
-                    if (!response.ok) throw new Error('Failed to fetch users');
-                    
-                    const data = await response.json();
+                    const data = await api.getUsers();
                     setUsers(data);
-                    
-                    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-                    const current = data.find(u => u.email === tokenPayload.sub);
-                    setCurrentUser(current);
                 } catch (err) {
-                    toast(err.message, 'error');
+                    if (!err.message.includes('Session expired')) {
+                        toast(err.message, 'error');
+                    }
                 } finally {
                     setLoading(false);
                 }
-            }, [token, toast]);
+            }, [token]);
             
             useEffect(() => {
                 fetchUsers();
             }, [fetchUsers]);
+            
+            // Auto-logout check on interval
+            useEffect(() => {
+                const checkToken = () => {
+                    if (isTokenExpired(token)) {
+                        toast('Session expired. Please login again.', 'error');
+                        logout();
+                    }
+                };
+                
+                const interval = setInterval(checkToken, 30000); // Check every 30 seconds
+                return () => clearInterval(interval);
+            }, [token, logout, toast]);
             
             const handleDelete = async () => {
                 if (!deletingUser) return;
                 setDeleteLoading(true);
                 
                 try {
-                    const response = await fetch(`${API_URL}/users/${deletingUser.id}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    
-                    if (!response.ok) throw new Error('Failed to delete user');
-                    
+                    // Delete expects 204 No Content, no request body
+                    await api.deleteUser(deletingUser.id);
                     setUsers(users.filter(u => u.id !== deletingUser.id));
                     toast('User deleted successfully', 'success');
                     setDeletingUser(null);
@@ -1129,9 +1401,15 @@
                                         <p className="font-mono" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{currentUser.role}</p>
                                     </div>
                                 )}
-                                <button className="btn btn-ghost" onClick={logout}>
+                                {!currentUser && loggedInEmail && (
+                                    <div style={{ textAlign: 'right' }}>
+                                        <p className="font-mono" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{loggedInEmail}</p>
+                                    </div>
+                                )}
+                                {/* Logout button - clears token from localStorage */}
+                                <button className="btn btn-ghost" onClick={logout} title="Logout">
                                     <Icons.LogOut />
-                                    <span style={{ display: 'none', '@media (min-width: 640px)': { display: 'inline' } }}>Logout</span>
+                                    <span>Logout</span>
                                 </button>
                             </div>
                         </header>
@@ -1164,7 +1442,7 @@
                             </div>
                         </div>
                         
-                        {/* Users Table */}
+                        {/* Users Table - only shown when logged in (token exists) */}
                         <div className="card animate-slideUp delay-4">
                             <div style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                                 <div>
@@ -1224,6 +1502,7 @@
                             user={editingUser}
                             onClose={() => setEditingUser(null)}
                             onSave={handleUserUpdated}
+                            api={api}
                         />
                     )}
                     
@@ -1243,7 +1522,15 @@
         // AUTH PROVIDER
         // =====================
         const AuthProvider = ({ children }) => {
-            const [token, setToken] = useState(localStorage.getItem('token'));
+            const [token, setToken] = useState(() => {
+                const stored = localStorage.getItem('token');
+                // Check if stored token is expired on load
+                if (stored && isTokenExpired(stored)) {
+                    localStorage.removeItem('token');
+                    return null;
+                }
+                return stored;
+            });
             const [toasts, setToasts] = useState([]);
             
             const login = (newToken) => {
@@ -1251,19 +1538,19 @@
                 setToken(newToken);
             };
             
-            const logout = () => {
+            const logout = useCallback(() => {
                 localStorage.removeItem('token');
                 setToken(null);
-            };
+            }, []);
             
-            const toast = (message, type) => {
+            const toast = useCallback((message, type) => {
                 const id = Date.now();
                 setToasts(prev => [...prev, { id, message, type }]);
-            };
+            }, []);
             
-            const removeToast = (id) => {
+            const removeToast = useCallback((id) => {
                 setToasts(prev => prev.filter(t => t.id !== id));
-            };
+            }, []);
             
             return (
                 <AuthContext.Provider value={{ token, login, logout, toast }}>
@@ -1293,7 +1580,10 @@
         const AppContent = ({ view, setView }) => {
             const { token } = useAuth();
             
+            // User list is hidden until login is successful (token exists)
             if (token) return <DashboardPage />;
+            
+            // Show login or register page
             if (view === 'register') return <RegisterPage onSwitch={() => setView('login')} />;
             return <LoginPage onSwitch={() => setView('register')} />;
         };
@@ -1306,3 +1596,4 @@
     </script>
 </body>
 </html>
+
